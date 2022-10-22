@@ -12,21 +12,19 @@ repositories {
     maven("https://jitpack.io")
 
 }
-
+tasks.jar {
+    archiveFileName.set("dataBuild.jar")
+}
 dependencies {
-    testImplementation(kotlin("test"))
-    implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.google.code.gson:gson:2.9.1")
-    implementation("com.github.FabricMC:tiny-remapper:d14e8f9980")
-    implementation("com.github.FabricMc:mapping-io:597f0722d6")
+    implementation("org.reflections:reflections:0.10.2")
+
+    implementation(files("../data/server-remapped.jar"))
+    implementation(fileTree("../data/META-INF/libraries"))
 
 }
 
-
-tasks.test {
-    useJUnitPlatform()
-}
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"

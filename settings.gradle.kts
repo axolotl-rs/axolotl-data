@@ -1,8 +1,4 @@
-import java.net.URI
-sourceControl {
-    gitRepository(URI.create("https://github.com/FabricMC/tiny-remapper.git")) {
-        producesModule("net.fabricmc:tiny-remapper")
-    }
-}
+include("dataBuild")
+include("dataTool")
 rootProject.name = "axolotl-data"
 

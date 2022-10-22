@@ -1,4 +1,6 @@
 .idea/
 .gradle/
-build/
-data/
+dataBuild/build/
+dataTool/build/
+/build/
+/data/

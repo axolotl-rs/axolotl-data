@@ -21,6 +21,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
 import java.nio.file.Path
+import java.util.jar.JarFile
 import kotlin.io.path.reader
 
 
@@ -36,8 +37,32 @@ class BuildData : CliktCommand() {
         println("Downloading $version to $output")
         if (download()) {
             println("Remapping Jar")
+            extractJar()
             remap()
 
+        }
+
+    }
+
+    private fun extractJar() {
+        val server = output.resolve("server.jar")
+        val jarFile = JarFile(server.toFile())
+        val entries = jarFile.entries()
+        while (entries.hasMoreElements()) {
+            val entry = entries.nextElement()
+            if (!entry.name.startsWith("META-INF")) continue
+            if (entry.isDirectory) {
+                continue
+            }
+            val file = output.resolve(entry.name)
+            if (!file.parent.toFile().exists()) {
+                file.parent.toFile().mkdirs()
+            }
+            jarFile.getInputStream(entry).use { input ->
+                file.toFile().outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
         }
 
     }
@@ -46,26 +71,31 @@ class BuildData : CliktCommand() {
         val mappings = output.resolve("server-mappings.txt")
         val tree = MemoryMappingTree()
         mappings.reader().use {
-            ProGuardReader.read(it, "OB_Minecraft", "Minecraft", tree)
+            ProGuardReader.read(it, "named", "official", tree)
         }
         val mappingsOutput = output.resolve("server-mappings.tiny")
 
         MappingWriter.create(mappingsOutput, MappingFormat.TINY_2).use { writer ->
-            tree.accept(MappingSourceNsSwitch(InvalidMojangMapMappingVisitor(writer), "Minecraft"))
+            tree.accept(MappingSourceNsSwitch(InvalidMojangMapMappingVisitor(writer), "named"))
         }
-        val server = output.resolve("server.jar")
+        val server = output.resolve("META-INF/versions/$version/server-$version.jar")
 
         val remappedServer = output.resolve("server-remapped.jar")
 
 
         val remapper = TinyRemapper.newRemapper()
-            .withMappings(TinyUtils.createTinyMappingProvider(mappingsOutput, "OB_Minecraft", "Minecraft"))
-            .rebuildSourceFilenames(true).build()
+            .withMappings(TinyUtils.createTinyMappingProvider(mappingsOutput,  "official","named"))
+            .rebuildSourceFilenames(true)
+            .fixPackageAccess(true)
+            .ignoreFieldDesc(false)
+            .renameInvalidLocals(true)
+            .checkPackageAccess(true).build()
 
 
         try {
             OutputConsumerPath.Builder(remappedServer).build().use { outputConsumer ->
-                outputConsumer.addNonClassFiles(server, NonClassCopyMode.UNCHANGED, remapper)
+                outputConsumer.addNonClassFiles(server, NonClassCopyMode.FIX_META_INF, remapper)
+                remapper.readClassPath(output.resolve("META-INF/libraries"))
                 remapper.readInputs(server)
                 remapper.apply(outputConsumer)
             }

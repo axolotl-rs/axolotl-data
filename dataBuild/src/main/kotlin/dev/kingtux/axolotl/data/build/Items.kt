@@ -11,9 +11,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.world.item.*
 import net.minecraft.world.level.block.Block
 
-enum class ItemType {
-    BLOCK, ITEM
-}
 
 enum class CreativeModeTab {
     BUILDING_BLOCKS, DECORATIONS, REDSTONE, TRANSPORTATION, MISC, FOOD, TOOLS, COMBAT, BREWING, MATERIALS, HOTBAR, INVENTORY;
@@ -93,12 +90,19 @@ data class DefaultAttributeValue(
 
 open class Item(
     val name: String,
-    val type: ItemType,
     val id: Int,
     val maxStackSize: Int = 64,
     val creativeTab: CreativeModeTab? = null,
     val attributes: List<DefaultAttributeValue> = listOf(),
 );
+open class BlockItem(
+    name: String,
+    id: Int,
+    val block: String,
+    maxStackSize: Int = 64,
+    creativeTab: CreativeModeTab? = null,
+    attributes: List<DefaultAttributeValue> = listOf(),
+) : Item(name, id, maxStackSize, creativeTab, attributes)
 
 open class TieredItem(
     name: String,
@@ -107,7 +111,7 @@ open class TieredItem(
     creativeTab: CreativeModeTab? = null,
     attributes: List<DefaultAttributeValue> = listOf(),
     val tier: String,
-) : Item(name, ItemType.ITEM, id, maxStackSize, creativeTab = creativeTab, attributes = attributes)
+) : Item(name,  id, maxStackSize, creativeTab = creativeTab, attributes = attributes)
 
 open class ToolItem(
     name: String,
@@ -131,7 +135,7 @@ open class ArmorItem(
     val armorSlot: String,
     val material: String,
 
-    ) : Item(name, ItemType.ITEM, id, 1, creativeTab = creativeTab, attributes = attributes)
+    ) : Item(name,  id, 1, creativeTab = creativeTab, attributes = attributes)
 
 
 class ItemExport {
@@ -215,14 +219,26 @@ class ItemExport {
                         )
                     )
                 )
-            } else{
-                val type = if (item is BlockItem) ItemType.BLOCK else ItemType.ITEM
+            }else if (item is net.minecraft.world.item.BlockItem){
+                items.add(
+                    gson.toJsonTree(
+                        BlockItem(
+                            name,
+                            id,
+                            Registry.BLOCK.getKey(item.block).path,
+                            item.maxStackSize,
+                            creativeTab,
+                            attributes,
+                        )
+                    )
+                )
+            }else{
                 val maxStackSize = item.maxStackSize
+
                 items.add(
                     gson.toJsonTree(
                         Item(
                             name,
-                            type,
                             id,
                             maxStackSize,
                             creativeTab,

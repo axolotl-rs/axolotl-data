@@ -17,14 +17,23 @@ class DataBuilder : WorldVersion {
         SharedConstants.CHECK_DATA_FIXER_SCHEMA = false
         Bootstrap.bootStrap();
         println("Starting Data Export to $path")
-        val items = ItemExport().run()
+        val materials: List<Material> = Material.load()
+        val sounds: List<SoundType> = SoundType.load()
+
+
+        this.writeFile(path.resolve("materials.json"), materials)
+        this.writeFile(path.resolve("soundTypes.json"), sounds)
+        this.writeFile(path.resolve("blocks.json"), BlockExporter(materials, sounds).run())
+        this.writeFile(path.resolve("items.json"), ItemExport().run())
+    }
+    fun writeFile(path: Path, data: List<Any>){
         val gson = GsonBuilder().setPrettyPrinting().create()
-        val itemsFile = path.resolve("items.json").toFile()
-        if (!itemsFile.exists()) {
-            itemsFile.createNewFile()
+        val file = path.toFile()
+        if (!file.exists()) {
+            file.createNewFile()
         }
-        val writer = itemsFile.writer()
-        gson.toJson(items, writer)
+        val writer = file.writer()
+        gson.toJson(data, writer)
         writer.close()
     }
 

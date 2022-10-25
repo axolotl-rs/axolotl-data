@@ -84,11 +84,11 @@ enum class ToolType {
 }
 
 data class DefaultAttributeValue(
-    val attribute: String,
-    val value: Double
+    val attribute: String, val value: Double
 )
 
 open class Item(
+    val type: String = "Generic",
     val name: String,
     val id: Int,
     val maxStackSize: Int = 64,
@@ -98,20 +98,22 @@ open class Item(
 open class BlockItem(
     name: String,
     id: Int,
-    val block: String,
     maxStackSize: Int = 64,
     creativeTab: CreativeModeTab? = null,
     attributes: List<DefaultAttributeValue> = listOf(),
-) : Item(name, id, maxStackSize, creativeTab, attributes)
+    val block: String,
+
+    ) : Item(type = "Block", name, id, maxStackSize, creativeTab, attributes)
 
 open class TieredItem(
+    type: String = "Tiered",
     name: String,
     id: Int,
     maxStackSize: Int = 64,
     creativeTab: CreativeModeTab? = null,
     attributes: List<DefaultAttributeValue> = listOf(),
     val tier: String,
-) : Item(name,  id, maxStackSize, creativeTab = creativeTab, attributes = attributes)
+) : Item(type, name, id, maxStackSize, creativeTab = creativeTab, attributes = attributes)
 
 open class ToolItem(
     name: String,
@@ -124,7 +126,7 @@ open class ToolItem(
     val toolType: ToolType,
     val blockTag: String? = null,
 
-    ) : TieredItem(name, id, maxStackSize, creativeTab, attributes, tier)
+    ) : TieredItem("Tool", name, id, maxStackSize, creativeTab, attributes, tier)
 
 open class ArmorItem(
     name: String,
@@ -135,13 +137,12 @@ open class ArmorItem(
     val armorSlot: String,
     val material: String,
 
-    ) : Item(name,  id, 1, creativeTab = creativeTab, attributes = attributes)
+    ) : Item("Armor", name, id, 1, creativeTab = creativeTab, attributes = attributes)
 
 
 class ItemExport {
     private fun getDefaultAttributes(
-        item: Class<*>,
-        itemValue: net.minecraft.world.item.Item
+        item: Class<*>, itemValue: net.minecraft.world.item.Item
     ): List<DefaultAttributeValue> {
 
         val attributes = try {
@@ -195,6 +196,7 @@ class ItemExport {
                     items.add(
                         gson.toJsonTree(
                             TieredItem(
+                                type = "Tiered",
                                 name,
                                 id,
                                 item.maxStackSize,
@@ -219,30 +221,27 @@ class ItemExport {
                         )
                     )
                 )
-            }else if (item is net.minecraft.world.item.BlockItem){
+            } else if (item is net.minecraft.world.item.BlockItem) {
                 items.add(
                     gson.toJsonTree(
                         BlockItem(
                             name,
                             id,
-                            Registry.BLOCK.getKey(item.block).path,
                             item.maxStackSize,
                             creativeTab,
                             attributes,
+                            Registry.BLOCK.getKey(item.block).path,
                         )
                     )
                 )
-            }else{
+            } else {
                 val maxStackSize = item.maxStackSize
 
                 items.add(
                     gson.toJsonTree(
                         Item(
-                            name,
-                            id,
-                            maxStackSize,
-                            creativeTab,
-                            attributes
+                            "Generic",
+                            name, id, maxStackSize, creativeTab, attributes
                         )
                     )
                 )
@@ -280,11 +279,7 @@ class ItemExport {
     }
 
     private fun tool(
-        name: String,
-        id: Int,
-        item: DiggerItem,
-        creativeTab: CreativeModeTab?,
-        attributes: List<DefaultAttributeValue>
+        name: String, id: Int, item: DiggerItem, creativeTab: CreativeModeTab?, attributes: List<DefaultAttributeValue>
     ): ToolItem? {
         val toolType = when (item) {
             is AxeItem -> ToolType.AXE
@@ -302,14 +297,7 @@ class ItemExport {
             it.get(item) as TagKey<Block>
         };
         return ToolItem(
-            name,
-            id,
-            item.maxStackSize,
-            tier.name,
-            creativeTab,
-            attributes,
-            toolType,
-            blockTag.location.path
+            name, id, item.maxStackSize, tier.name, creativeTab, attributes, toolType, blockTag.location.path
         )
     }
 }

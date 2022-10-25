@@ -1,4 +1,4 @@
-package me.kingtux.axolotl.data.launcher
+package dev.kingtux.axolotl.data.mapping.launcher
 
 data class VersionManifest(
     val latest: Latest, val versions: List<Version>

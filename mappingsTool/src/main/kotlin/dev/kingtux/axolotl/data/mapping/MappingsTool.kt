@@ -1,12 +1,12 @@
-package me.kingtux.axolotl.data;
+package dev.kingtux.axolotl.data.mapping;
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.path
 import com.google.gson.Gson
-import me.kingtux.axolotl.data.launcher.VersionFile
-import me.kingtux.axolotl.data.launcher.VersionManifest
-import me.kingtux.axolotl.data.mappings.InvalidMojangMapMappingVisitor
+import dev.kingtux.axolotl.data.mapping.launcher.VersionFile
+import dev.kingtux.axolotl.data.mapping.launcher.VersionManifest
+import dev.kingtux.axolotl.data.mapping.mappings.InvalidMojangMapMappingVisitor
 import net.fabricmc.mappingio.MappingWriter
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.MappingFormat
@@ -20,6 +20,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import java.net.URL
 import java.nio.file.Path
 import java.util.jar.JarFile
 import kotlin.io.path.reader
@@ -39,9 +40,28 @@ class BuildData : CliktCommand() {
             println("Remapping Jar")
             extractJar()
             remap()
-
+            runData()
         }
 
+    }
+
+    private fun runData() {
+        val file = BuildData::class.java.getResource("/dataTool.jarinjar")
+        if (file == null) {
+            println("Could not find dataTool.jarinjar")
+            return
+        }
+        val dataLoader = mutableListOf<URL>(file)
+        for (file in output.resolve("META-INF/libraries").toFile().walk()) {
+            if (file.isFile && file.extension == "jar") {
+                dataLoader.add(file.toURI().toURL())
+            }
+        }
+        dataLoader.add(output.resolve("server-remapped.jar").toUri().toURL())
+        val classLoader = DataClassLoader(dataLoader.toTypedArray())
+        val mainClass = classLoader.loadClass("dev.kingtux.axolotl.data.build.DataBuilder",true)
+        val mainMethod: Object = mainClass.getConstructor().newInstance() as Object;
+        mainMethod.javaClass.getMethod("start", Path::class.java).invoke(mainMethod, output)
     }
 
     private fun extractJar() {
@@ -84,7 +104,7 @@ class BuildData : CliktCommand() {
 
 
         val remapper = TinyRemapper.newRemapper()
-            .withMappings(TinyUtils.createTinyMappingProvider(mappingsOutput,  "official","named"))
+            .withMappings(TinyUtils.createTinyMappingProvider(mappingsOutput, "official", "named"))
             .rebuildSourceFilenames(true)
             .fixPackageAccess(true)
             .ignoreFieldDesc(false)

@@ -1,4 +1,4 @@
-package me.kingtux.axolotl.data.mappings
+package dev.kingtux.axolotl.data.mapping.mappings
 
 
 import net.fabricmc.mappingio.MappedElementKind

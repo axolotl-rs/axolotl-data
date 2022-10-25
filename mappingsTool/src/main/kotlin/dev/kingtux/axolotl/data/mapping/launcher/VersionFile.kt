@@ -1,4 +1,4 @@
-package me.kingtux.axolotl.data.launcher
+package dev.kingtux.axolotl.data.mapping.launcher
 
 import com.google.gson.annotations.SerializedName
 

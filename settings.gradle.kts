@@ -1,4 +1,4 @@
 include("dataBuild")
-include("dataTool")
+include("mappingsTool")
 rootProject.name = "axolotl-data"
 

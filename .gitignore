@@ -1,6 +1,7 @@
 .idea/
 .gradle/
 dataBuild/build/
-dataTool/build/
+mappingsTool/build/
 /build/
 /data/
+logs

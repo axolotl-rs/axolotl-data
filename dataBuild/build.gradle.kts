@@ -17,16 +17,17 @@ repositories {
 
 }
 dependencies {
+    implementation(project(":common"))
     implementation("com.github.ajalt.clikt:clikt:3.5.0")
     implementation("com.google.code.gson:gson:2.9.1")
     implementation("org.reflections:reflections:0.10.2")
 
 
-    testImplementation(files("../data/server-remapped.jar"))
-    testImplementation(fileTree("../data/META-INF/libraries"))
+    testImplementation(files("../data/1.19.2/server-remapped.jar"))
+    testImplementation(fileTree("../data/1.19.2/META-INF/libraries"))
 
-    compileOnly(files("../data/server-remapped.jar"))
-    compileOnly(fileTree("../data/META-INF/libraries"))
+    compileOnly(files("../data/1.19.2/server-remapped.jar"))
+    compileOnly(fileTree("../data/1.19.2/META-INF/libraries"))
 
 }
 tasks {

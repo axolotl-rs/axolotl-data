@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.types.path
 import com.google.gson.Gson
+import dev.kingtux.axolotl.data.common.DataBuilder
 import dev.kingtux.axolotl.data.mapping.launcher.VersionFile
 import dev.kingtux.axolotl.data.mapping.launcher.VersionManifest
 import dev.kingtux.axolotl.data.mapping.mappings.InvalidMojangMapMappingVisitor
@@ -21,6 +22,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
 import java.net.URL
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.jar.JarFile
 import kotlin.io.path.reader
@@ -29,43 +31,58 @@ import kotlin.io.path.reader
 class BuildData : CliktCommand() {
     private val version: String by argument(help = "Minecraft Version to Download")
     private val output: Path by argument().path(canBeFile = false)
-
     override fun run() {
 
-        if (!output.toFile().exists()) {
+        if (!output.resolve(version).toFile().exists()) {
             output.toFile().mkdirs()
         }
         println("Downloading $version to $output")
         if (download()) {
-            println("Remapping Jar")
+            println("Downloaded $version to $output")
             extractJar()
+            println("Extracted $version to $output")
             remap()
+            println("Remapped $version to $output")
             runData()
+            println("Ran Data for $version to $output")
+        } else {
+            println("Failed to download $version to $output")
         }
 
     }
 
     private fun runData() {
-        val file = BuildData::class.java.getResource("/dataTool.jarinjar")
-        if (file == null) {
+        val jarInJar = BuildData::class.java.getResource("/dataTool.jarinjar")
+        if (jarInJar == null) {
             println("Could not find dataTool.jarinjar")
             return
         }
-        val dataLoader = mutableListOf<URL>(file)
-        for (file in output.resolve("META-INF/libraries").toFile().walk()) {
+        val dataToolJar = output.resolve("dataTool.jar")
+        if (dataToolJar.toFile().exists()) {
+            dataToolJar.toFile().delete()
+        }
+        Files.copy(jarInJar.openStream(), dataToolJar)
+        val dataLoader = mutableListOf<URL>(dataToolJar.toUri().toURL())
+        for (file in output.resolve(version).resolve("META-INF/libraries").toFile().walk()) {
             if (file.isFile && file.extension == "jar") {
                 dataLoader.add(file.toURI().toURL())
             }
         }
-        dataLoader.add(output.resolve("server-remapped.jar").toUri().toURL())
+        dataLoader.add(output.resolve(version).resolve("server-remapped.jar").toUri().toURL())
         val classLoader = DataClassLoader(dataLoader.toTypedArray())
-        val mainClass = classLoader.loadClass("dev.kingtux.axolotl.data.build.DataBuilder",true)
-        val mainMethod: Object = mainClass.getConstructor().newInstance() as Object;
-        mainMethod.javaClass.getMethod("start", Path::class.java).invoke(mainMethod, output)
+        val mainClass = classLoader.loadClass("dev.kingtux.axolotl.data.build.DataBuilder", true)
+        val mainMethod = mainClass.getConstructor().newInstance().let {
+            if (it is DataBuilder) {
+                it
+            } else {
+                throw IllegalStateException("DataBuilder is not a DataBuilder")
+            }
+        };
+        mainMethod.javaClass.getMethod("start", Path::class.java).invoke(mainMethod, output.resolve(version))
     }
 
     private fun extractJar() {
-        val server = output.resolve("server.jar")
+        val server = output.resolve(version).resolve("raw.jar")
         val jarFile = JarFile(server.toFile())
         val entries = jarFile.entries()
         while (entries.hasMoreElements()) {
@@ -74,9 +91,12 @@ class BuildData : CliktCommand() {
             if (entry.isDirectory) {
                 continue
             }
-            val file = output.resolve(entry.name)
+            val file = output.resolve(version).resolve(entry.name)
             if (!file.parent.toFile().exists()) {
                 file.parent.toFile().mkdirs()
+            }
+            if (file.toFile().exists()) {
+                return
             }
             jarFile.getInputStream(entry).use { input ->
                 file.toFile().outputStream().use { output ->
@@ -88,34 +108,37 @@ class BuildData : CliktCommand() {
     }
 
     private fun remap() {
-        val mappings = output.resolve("server-mappings.txt")
-        val tree = MemoryMappingTree()
-        mappings.reader().use {
-            ProGuardReader.read(it, "named", "official", tree)
+        val mappingsOutput = output.resolve(version).resolve("server-mappings.tiny")
+        if (!mappingsOutput.toFile().exists()) {
+            val mappings = output.resolve(version).resolve("server-mappings.txt")
+            val tree = MemoryMappingTree()
+            mappings.reader().use {
+                ProGuardReader.read(it, "named", "official", tree)
+            }
+            MappingWriter.create(mappingsOutput, MappingFormat.TINY_2).use { writer ->
+                tree.accept(MappingSourceNsSwitch(InvalidMojangMapMappingVisitor(writer), "named"))
+            }
         }
-        val mappingsOutput = output.resolve("server-mappings.tiny")
 
-        MappingWriter.create(mappingsOutput, MappingFormat.TINY_2).use { writer ->
-            tree.accept(MappingSourceNsSwitch(InvalidMojangMapMappingVisitor(writer), "named"))
+        val server = output.resolve(version).resolve("META-INF/versions/$version/server-$version.jar")
+
+
+        val remappedServer = output.resolve(version).resolve("server-remapped.jar")
+        if (remappedServer.toFile().exists()) {
+            println("Skipping Remap as it already exists")
+            return;
         }
-        val server = output.resolve("META-INF/versions/$version/server-$version.jar")
-
-        val remappedServer = output.resolve("server-remapped.jar")
-
 
         val remapper = TinyRemapper.newRemapper()
             .withMappings(TinyUtils.createTinyMappingProvider(mappingsOutput, "official", "named"))
-            .rebuildSourceFilenames(true)
-            .fixPackageAccess(true)
-            .ignoreFieldDesc(false)
-            .renameInvalidLocals(true)
+            .rebuildSourceFilenames(true).fixPackageAccess(true).ignoreFieldDesc(false).renameInvalidLocals(true)
             .checkPackageAccess(true).build()
 
 
         try {
             OutputConsumerPath.Builder(remappedServer).build().use { outputConsumer ->
                 outputConsumer.addNonClassFiles(server, NonClassCopyMode.FIX_META_INF, remapper)
-                remapper.readClassPath(output.resolve("META-INF/libraries"))
+                remapper.readClassPath(output.resolve(version).resolve("META-INF/libraries"))
                 remapper.readInputs(server)
                 remapper.apply(outputConsumer)
             }
@@ -146,12 +169,12 @@ class BuildData : CliktCommand() {
                 val serverMappings = versionFile.downloads.serverMappings
                 Request.Builder().url(server.url).build().let { request ->
                     client.newCall(request).execute().use { response ->
-                        if (downloadFile(response, "server.jar")) return false
+                        if (!downloadFile(response, "raw.jar")) return false
                     }
                 }
                 Request.Builder().url(serverMappings.url).build().let { request ->
                     client.newCall(request).execute().use { response ->
-                        if (downloadFile(response, "server-mappings.txt")) return false
+                        if (!downloadFile(response, "server-mappings.txt")) return false
                     }
                 }
             }
@@ -163,11 +186,18 @@ class BuildData : CliktCommand() {
         if (!response.isSuccessful) throw Exception("Unexpected code $response")
         val body = response.body
         if (body == null) {
-            echo("No Body")
+            println("No Body")
             return true
         }
-        val file = output.resolve(name)
+        val file = output.resolve(version).resolve(name)
         val toFile = file.toFile()
+        if (!toFile.exists()) {
+            println("Downloading $name")
+            toFile.parentFile.mkdirs()
+            toFile.createNewFile()
+        } else {
+            return true;
+        }
         toFile.writeBytes(body.bytes())
         return false
     }

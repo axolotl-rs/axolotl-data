@@ -8,25 +8,26 @@ import net.minecraft.world.level.storage.DataVersion
 import java.nio.file.Path
 import java.util.*
 
-class DataBuilder : WorldVersion {
-    public fun start(path: Path) {
-        val path = path.toAbsolutePath()
+class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
+    override fun start(path: Path) {
+        val pathAsAbsolute = path.toAbsolutePath()
 
         SharedConstants.setVersion(this)
         SharedConstants.IS_RUNNING_IN_IDE = true
         SharedConstants.CHECK_DATA_FIXER_SCHEMA = false
-        Bootstrap.bootStrap();
-        println("Starting Data Export to $path")
+        Bootstrap.bootStrap()
+        println("Starting Data Export to $pathAsAbsolute")
         val materials: List<Material> = Material.load()
         val sounds: List<SoundType> = SoundType.load()
 
 
-        this.writeFile(path.resolve("materials.json"), materials)
-        this.writeFile(path.resolve("soundTypes.json"), sounds)
-        this.writeFile(path.resolve("blocks.json"), BlockExporter(materials, sounds).run())
-        this.writeFile(path.resolve("items.json"), ItemExport().run())
+        this.writeFile(pathAsAbsolute.resolve("materials.json"), materials)
+        this.writeFile(pathAsAbsolute.resolve("soundTypes.json"), sounds)
+        this.writeFile(pathAsAbsolute.resolve("blocks.json"), BlockExporter(materials, sounds).run())
+        this.writeFile(pathAsAbsolute.resolve("items.json"), ItemExport().run())
     }
-    fun writeFile(path: Path, data: List<Any>){
+
+    fun writeFile(path: Path, data: List<Any>) {
         val gson = GsonBuilder().setPrettyPrinting().create()
         val file = path.toFile()
         if (!file.exists()) {
@@ -64,4 +65,6 @@ class DataBuilder : WorldVersion {
     override fun getDataVersion(): DataVersion {
         return DataVersion(0)
     }
+
+
 }

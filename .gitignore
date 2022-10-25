@@ -1,6 +1,7 @@
 .idea/
 .gradle/
 dataBuild/build/
+common/build/
 mappingsTool/build/
 /build/
 /data/

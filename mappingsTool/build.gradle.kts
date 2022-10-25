@@ -26,14 +26,18 @@ dependencies {
 }
 tasks {
     jar {
-        from(project(":dataBuild").tasks.jar.get().archiveFile)
+        if (project.hasProperty("jarinjar")) {
+            from(project(":dataBuild").tasks.jar.get().archiveFile)
+        }
 
         manifest {
             attributes(mapOf("Main-Class" to "dev.kingtux.axolotl.data.mapping.MappingsToolKt"))
         }
     }
     shadowJar {
-        from(project(":dataBuild").tasks.jar.get().archiveFile)
+        if (project.hasProperty("jarinjar")) {
+            from(project(":dataBuild").tasks.jar.get().archiveFile)
+        }
 
         manifest {
             manifest {

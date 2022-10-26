@@ -2,12 +2,16 @@ package dev.kingtux.axolotl.data.build
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.JsonSerializationContext
+import com.google.gson.JsonSerializer
 import dev.kingtux.axolotl.data.build.block.BlockExporter
 import dev.kingtux.axolotl.data.build.item.ItemExport
 import net.minecraft.SharedConstants
 import net.minecraft.WorldVersion
 import net.minecraft.server.Bootstrap
 import net.minecraft.world.level.storage.DataVersion
+import java.lang.reflect.Type
 import java.nio.file.Path
 import java.util.*
 
@@ -20,9 +24,19 @@ open class Tag(
 )
 
 class GenericTag(
-    name: String,
-    val properties: Map<String, JsonElement>
+    name: String, val properties: Map<String, JsonElement>
 ) : Tag(name)
+
+class GenericTagSerializer : JsonSerializer<GenericTag> {
+    override fun serialize(tag: GenericTag, p1: Type, context: JsonSerializationContext): JsonElement {
+        val map = JsonObject();
+        map.addProperty("name", tag.name);
+        for ((key, value) in tag.properties) {
+            map.add(key, value);
+        }
+        return map;
+    }
+}
 
 class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
     override fun start(path: Path) {
@@ -50,7 +64,8 @@ class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
     }
 
     private fun writeFile(path: Path, data: List<Any>) {
-        val gson = GsonBuilder().setPrettyPrinting().create()
+        val gson = GsonBuilder().setPrettyPrinting().registerTypeAdapter(GenericTag::class.java, GenericTagSerializer())
+            .create()
         val file = path.toFile()
         if (!file.exists()) {
             file.createNewFile()

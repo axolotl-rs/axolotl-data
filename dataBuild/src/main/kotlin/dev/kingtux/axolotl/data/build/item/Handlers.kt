@@ -1,6 +1,7 @@
 package dev.kingtux.axolotl.data.build.item
 
 import com.google.gson.Gson
+import dev.kingtux.axolotl.data.build.GenericTag
 import dev.kingtux.axolotl.data.build.Tag
 import dev.kingtux.axolotl.data.build.TagHandler
 import net.minecraft.core.Registry
@@ -10,7 +11,7 @@ import net.minecraft.world.item.*
 
 class BlockItemTagHandler() : TagHandler<BlockItem> {
     override fun handle(instance: BlockItem): Tag {
-        return Tag(
+        return GenericTag(
             "BlockItem", mapOf(
                 "block" to Gson().toJsonTree(Registry.BLOCK.getKey(instance.block).path)
             )
@@ -39,7 +40,7 @@ class DiggerItemTagHandler() : TagHandler<DiggerItem> {
             }
         }
         val gson = Gson()
-        return Tag(
+        return GenericTag(
             "ToolItem", mapOf(
                 "toolType" to gson.toJsonTree(toolType),
                 "tier" to gson.toJsonTree(tier.name),
@@ -53,7 +54,7 @@ class DiggerItemTagHandler() : TagHandler<DiggerItem> {
 class TieredItemHandler() : TagHandler<TieredItem> {
     override fun handle(instance: TieredItem): Tag {
         val tier = instance.tier as Tiers
-        return Tag(
+        return GenericTag(
             "TieredItem", mapOf(
                 "tier" to Gson().toJsonTree(tier.name)
             )
@@ -70,10 +71,10 @@ class ArmorItemTagHandler() : TagHandler<ArmorItem> {
             EquipmentSlot.CHEST -> "chest"
             EquipmentSlot.LEGS -> "legs"
             EquipmentSlot.FEET -> "feet"
-            else -> return Tag("ArmorItem", mapOf())
+            else -> return GenericTag("ArmorItem", mapOf())
         }
         val material = (instance.material as ArmorMaterials).name
-        return Tag(
+        return GenericTag(
             "ArmorItem", mapOf(
                 "equipmentSlot" to Gson().toJsonTree(equipmentSlot),
                 "material" to Gson().toJsonTree(material)

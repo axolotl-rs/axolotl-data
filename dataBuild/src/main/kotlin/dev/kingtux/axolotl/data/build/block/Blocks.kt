@@ -7,6 +7,7 @@ import dev.kingtux.axolotl.data.build.SoundType
 import dev.kingtux.axolotl.data.build.Tag
 import dev.kingtux.axolotl.data.build.TagHandler
 import net.minecraft.core.Registry
+import net.minecraft.world.level.block.BedBlock
 import net.minecraft.world.level.block.SignBlock
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.block.Block as MinecraftBlock
@@ -98,15 +99,16 @@ class Block(
 class BlockExporter(
     internal val materials: List<Material>,
     internal val soundTypes: List<SoundType>,
-    private val tagHandlers: Map<Class<*>, TagHandler<Any>> = mapOf(
-        SignBlock::class.java to (Handlers() as TagHandler<Any>)
+    private val tagSignHandler: Map<Class<*>, TagHandler<Any>> = mapOf(
+        SignBlock::class.java to (SignHandler() as TagHandler<Any>),
+        BedBlock::class.java to (BedHandler() as TagHandler<Any>)
     )
 ) {
     /**
      * Generate Block Tag
      */
     private fun buildTag(clazz: Class<*>, instance: MinecraftBlock): Tag {
-        val getValue = tagHandlers[clazz]
+        val getValue = tagSignHandler[clazz]
         return getValue?.handle(instance) ?: Tag(clazz.simpleName)
     }
 

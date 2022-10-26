@@ -15,10 +15,14 @@ public interface TagHandler<T> {
     fun handle(instance: T): Tag
 }
 
-public data class Tag(
+open class Tag(
     val name: String,
-    val properties: Map<String, JsonElement>? = null,
 )
+
+class GenericTag(
+    name: String,
+    val properties: Map<String, JsonElement>
+) : Tag(name)
 
 class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
     override fun start(path: Path) {

@@ -2,11 +2,17 @@ package dev.kingtux.axolotl.data.build
 
 import com.google.gson.Gson
 import com.google.gson.JsonElement
+import dev.kingtux.axolotl.data.build.block.Handlers
 import net.minecraft.core.Registry
 import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.SignBlock
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.material.Material as MinecraftMaterial
 
+
+/**
+ * Block Properties based on BlockBehaviour.Properties
+ */
 data class BlockProperties(
     val material: String,
     val hasCollision: Boolean,
@@ -21,7 +27,8 @@ data class BlockProperties(
     val jumpFactor: Float,
     val canOcclude: Boolean,
     val isAir: Boolean,
-    val drops: String
+    // The loot table id
+    val drops: String,
     // TODO: Add more properties
 ) {
 
@@ -75,10 +82,44 @@ private fun <T, R> Class<T>.readField(instance: T, name: String): R {
     }
 }
 
-open class Block(val id: Int, val name: String, val properties: BlockProperties)
+/**
+ * The Block Object
+ */
+class Block(
+    val id: Int, val name: String,
+    val properties: BlockProperties,
+    val tags: List<Tag> = listOf(),
+)
 
 
-class BlockExporter(internal val materials: List<Material>, internal val soundTypes: List<SoundType>) {
+class BlockExporter(
+    internal val materials: List<Material>,
+    internal val soundTypes: List<SoundType>,
+    private val tagHandlers: Map<Class<*>, TagHandler<Any>> = mapOf(
+        SignBlock::class.java to (Handlers() as TagHandler<Any>)
+    )
+) {
+    /**
+     * Generate Block Tag
+     */
+    private fun buildTag(clazz: Class<*>, instance: Block): Tag {
+        val getValue = tagHandlers[clazz]
+        return getValue?.handle(instance) ?: Tag(clazz.simpleName)
+    }
+
+    /**
+     * Loops through block interfaces and parent classes to generate a list of "tags"
+     */
+    private fun buildTags(instance: Block, blockClass: Class<*>, tags: MutableList<Tag>) {
+        if (blockClass == Block::class.java) return;
+
+        tags.add(buildTag(blockClass, instance))
+
+        blockClass.interfaces.forEach {
+            tags.add(buildTag(it, instance))
+        }
+        buildTags(instance, blockClass.superclass, tags)
+    }
 
     fun run(): List<JsonElement> {
         val items = mutableListOf<JsonElement>()
@@ -87,8 +128,9 @@ class BlockExporter(internal val materials: List<Material>, internal val soundTy
             val id = Registry.BLOCK.getId(item)
             val name = Registry.BLOCK.getKey(item).path
             val properties = BlockProperties.buildProperties(item, this)
-
-            items.add(gson.toJsonTree(Block(id, name, properties)))
+            val tags = mutableListOf<Tag>()
+            buildTags(item, item.javaClass, tags)
+            items.add(gson.toJsonTree(Block(id, name, properties, tags)))
         }
         return items
 

@@ -60,11 +60,11 @@ data class SoundType(
                     it.name,
                     soundType.volume,
                     soundType.pitch,
-                    Registry.SOUND_EVENT.getKey(soundType.breakSound)?.path ?: "null",
-                    Registry.SOUND_EVENT.getKey(soundType.stepSound)?.path ?: "null",
-                    Registry.SOUND_EVENT.getKey(soundType.placeSound)?.path ?: "null",
-                    Registry.SOUND_EVENT.getKey(soundType.hitSound)?.path ?: "null",
-                    Registry.SOUND_EVENT.getKey(soundType.fallSound)?.path ?: "null"
+                    soundType.breakSound.location.path,
+                    soundType.stepSound.location.path,
+                    soundType.placeSound.location.path,
+                    soundType.hitSound.location.path,
+                    soundType.fallSound.location.path
                 )
             }
         }

@@ -1,6 +1,8 @@
 package dev.kingtux.axolotl.data.build
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonElement
+import dev.kingtux.axolotl.data.build.item.ItemExport
 import net.minecraft.SharedConstants
 import net.minecraft.WorldVersion
 import net.minecraft.server.Bootstrap
@@ -8,14 +10,26 @@ import net.minecraft.world.level.storage.DataVersion
 import java.nio.file.Path
 import java.util.*
 
+public interface TagHandler<T> {
+    fun handle(instance: T): Tag
+}
+
+public data class Tag(
+    val name: String,
+    val properties: Map<String, JsonElement>? = null,
+)
+
 class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
     override fun start(path: Path) {
         val pathAsAbsolute = path.toAbsolutePath()
 
+        println("Tricking Minecraft into thinking it's an actual server")
         SharedConstants.setVersion(this)
         SharedConstants.IS_RUNNING_IN_IDE = true
         SharedConstants.CHECK_DATA_FIXER_SCHEMA = false
         Bootstrap.bootStrap()
+        println("Done tricking Minecraft")
+
         println("Starting Data Export to $pathAsAbsolute")
         val materials: List<Material> = Material.buildMaterials()
         val sounds: List<SoundType> = SoundType.buildSoundTypes()
@@ -30,7 +44,7 @@ class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
         this.writeFile(pathAsAbsolute.resolve("items.json"), ItemExport().run())
     }
 
-    fun writeFile(path: Path, data: List<Any>) {
+    private fun writeFile(path: Path, data: List<Any>) {
         val gson = GsonBuilder().setPrettyPrinting().create()
         val file = path.toFile()
         if (!file.exists()) {

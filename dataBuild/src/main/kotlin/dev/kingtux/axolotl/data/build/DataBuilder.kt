@@ -17,13 +17,16 @@ class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
         SharedConstants.CHECK_DATA_FIXER_SCHEMA = false
         Bootstrap.bootStrap()
         println("Starting Data Export to $pathAsAbsolute")
-        val materials: List<Material> = Material.load()
-        val sounds: List<SoundType> = SoundType.load()
+        val materials: List<Material> = Material.buildMaterials()
+        val sounds: List<SoundType> = SoundType.buildSoundTypes()
 
-
+        println("Exporting Materials")
         this.writeFile(pathAsAbsolute.resolve("materials.json"), materials)
+        println("Exporting Sounds")
         this.writeFile(pathAsAbsolute.resolve("soundTypes.json"), sounds)
+        println("Exporting Blocks")
         this.writeFile(pathAsAbsolute.resolve("blocks.json"), BlockExporter(materials, sounds).run())
+        println("Exporting Items")
         this.writeFile(pathAsAbsolute.resolve("items.json"), ItemExport().run())
     }
 

@@ -49,7 +49,11 @@ data class Material(
     companion object {
 
 
-        fun load(): List<Material> {
+        /**
+         *Builds the Materials from the Minecraft Material class
+         *By looping through fields and grabbing the Public, Static, and Final fields
+         */
+        fun buildMaterials(): List<Material> {
             return MinecraftMaterial::class.java.declaredFields.filter {
                 Modifier.isFinal(it.modifiers) && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers)
             }.map {

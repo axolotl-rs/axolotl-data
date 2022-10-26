@@ -47,7 +47,11 @@ data class SoundType(
     }
 
     companion object {
-        fun load(): List<SoundType> {
+        /**
+         * Builds the SoundTypes from the Minecraft SoundType class
+         * By looping through fields and grabbing the Public, Static, and Final fields
+         */
+        fun buildSoundTypes(): List<SoundType> {
             return MinecraftSoundType::class.java.declaredFields.filter {
                 Modifier.isFinal(it.modifiers) && Modifier.isStatic(it.modifiers) && Modifier.isPublic(it.modifiers)
             }.map {

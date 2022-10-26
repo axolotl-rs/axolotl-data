@@ -9,8 +9,8 @@ import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.entity.ai.attributes.Attribute
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.world.item.*
-import net.minecraft.world.level.block.Block
-
+import net.minecraft.world.item.ArmorItem as MinecraftWorldItemArmorItem
+import net.minecraft.world.item.DiggerItem as MinecraftDiggerItem
 
 enum class CreativeModeTab {
     BUILDING_BLOCKS, DECORATIONS, REDSTONE, TRANSPORTATION, MISC, FOOD, TOOLS, COMBAT, BREWING, MATERIALS, HOTBAR, INVENTORY;
@@ -95,7 +95,7 @@ open class Item(
     val creativeTab: CreativeModeTab? = null,
     val attributes: List<DefaultAttributeValue> = listOf(),
 );
-open class BlockItem(
+class BlockItem(
     name: String,
     id: Int,
     maxStackSize: Int = 64,
@@ -105,6 +105,7 @@ open class BlockItem(
 
     ) : Item(type = "Block", name, id, maxStackSize, creativeTab, attributes)
 
+// A tiered item
 open class TieredItem(
     type: String = "Tiered",
     name: String,
@@ -115,7 +116,8 @@ open class TieredItem(
     val tier: String,
 ) : Item(type, name, id, maxStackSize, creativeTab = creativeTab, attributes = attributes)
 
-open class ToolItem(
+// A digger item
+class DiggerItem(
     name: String,
     id: Int,
     maxStackSize: Int = 64,
@@ -128,7 +130,8 @@ open class ToolItem(
 
     ) : TieredItem("Tool", name, id, maxStackSize, creativeTab, attributes, tier)
 
-open class ArmorItem(
+// An Armor Item
+class ArmorItem(
     name: String,
     id: Int,
     creativeTab: CreativeModeTab? = null,
@@ -150,16 +153,29 @@ class ItemExport {
 
             val defaultModifiers = item.getDeclaredField("defaultModifiers")
             defaultModifiers.isAccessible = true
-            val modifiers = defaultModifiers.get(itemValue) as ImmutableListMultimap<Attribute, AttributeModifier>;
-            for (modifier in modifiers.entries()) {
-                Registry.ATTRIBUTE.getKey(modifier.key)?.let {
-                    attributes.add(DefaultAttributeValue(it.path, modifier.value.amount))
+            defaultModifiers.get(itemValue).let { modifiers ->
+                if (modifiers is ImmutableListMultimap<*, *>) {
+                    for (modifier in modifiers.entries()) {
+                        if (modifier.key is Attribute && modifier.value is AttributeModifier) {
+                            Registry.ATTRIBUTE.getKey(modifier.key as Attribute)?.let {
+                                attributes.add(
+                                    DefaultAttributeValue(
+                                        it.path,
+                                        (modifier.value as AttributeModifier).amount
+                                    )
+                                )
+                            }
+                        }
+
+                    }
                 }
             }
+
+
             attributes
         } catch (e: NoSuchFieldException) {
-            mutableListOf<DefaultAttributeValue>()
-        };
+            mutableListOf()
+        }
         attributes += item.superclass.let {
             if (it != null) {
                 getDefaultAttributes(it, itemValue)
@@ -175,12 +191,12 @@ class ItemExport {
         for (item in Registry.ITEM) {
             val id = Registry.ITEM.getId(item)
             val name = Registry.ITEM.getKey(item).path
-            val attributes = getDefaultAttributes(item.javaClass, item);
+            val attributes = getDefaultAttributes(item.javaClass, item)
             val creativeTab =
                 if (item.itemCategory == null) null else CreativeModeTab.fromMinecraftType(item.itemCategory!!)
             val gson = Gson()
             if (item is net.minecraft.world.item.TieredItem) {
-                if (item is DiggerItem) {
+                if (item is net.minecraft.world.item.DiggerItem) {
                     items.add(
                         gson.toJsonTree(
                             this.tool(
@@ -208,16 +224,15 @@ class ItemExport {
                     )
                 }
 
-            } else if (item is net.minecraft.world.item.ArmorItem) {
+            } else if (item is MinecraftWorldItemArmorItem) {
                 items.add(
                     gson.toJsonTree(
-                        ArmorItem(
+                        armor(
                             name,
                             id,
+                            item,
                             creativeTab,
                             attributes,
-                            item.slot.name,
-                            (item.material as ArmorMaterials).name,
                         )
                     )
                 )
@@ -254,7 +269,7 @@ class ItemExport {
     private fun armor(
         name: String,
         id: Int,
-        item: net.minecraft.world.item.ArmorItem,
+        item: MinecraftWorldItemArmorItem,
         creativeTab: CreativeModeTab?,
         attributes: List<DefaultAttributeValue>
     ): ArmorItem? {
@@ -263,7 +278,7 @@ class ItemExport {
             EquipmentSlot.CHEST -> "chest"
             EquipmentSlot.LEGS -> "legs"
             EquipmentSlot.FEET -> "feet"
-            else -> return null;
+            else -> return null
         }
         val material = (item.material as ArmorMaterials).name
 
@@ -279,8 +294,12 @@ class ItemExport {
     }
 
     private fun tool(
-        name: String, id: Int, item: DiggerItem, creativeTab: CreativeModeTab?, attributes: List<DefaultAttributeValue>
-    ): ToolItem? {
+        name: String,
+        id: Int,
+        item: MinecraftDiggerItem,
+        creativeTab: CreativeModeTab?,
+        attributes: List<DefaultAttributeValue>
+    ): DiggerItem? {
         val toolType = when (item) {
             is AxeItem -> ToolType.AXE
             is HoeItem -> ToolType.HOE
@@ -288,16 +307,22 @@ class ItemExport {
             is PickaxeItem -> ToolType.PICKAXE
             else -> {
                 println("Unknown tool type for $name")
-                return null;
+                return null
             }
         }
-        val tier = item.tier as Tiers;
-        val blockTag = DiggerItem::class.java.getDeclaredField("blocks").let {
-            it.isAccessible = true
-            it.get(item) as TagKey<Block>
-        };
-        return ToolItem(
-            name, id, item.maxStackSize, tier.name, creativeTab, attributes, toolType, blockTag.location.path
+        val tier = item.tier as Tiers
+        val blockTag = MinecraftDiggerItem::class.java.getDeclaredField("blocks").let { field ->
+            field.isAccessible = true
+            field.get(item).let {
+                if (it is TagKey<*>) {
+                    it.location().path
+                } else {
+                    null
+                }
+            }
+        }
+        return DiggerItem(
+            name, id, item.maxStackSize, tier.name, creativeTab, attributes, toolType, blockTag
         )
     }
 }

@@ -2,6 +2,7 @@ package dev.kingtux.axolotl.data.build
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
+import dev.kingtux.axolotl.data.build.block.BlockExporter
 import dev.kingtux.axolotl.data.build.item.ItemExport
 import net.minecraft.SharedConstants
 import net.minecraft.WorldVersion

@@ -1,12 +1,15 @@
-package dev.kingtux.axolotl.data.build
+package dev.kingtux.axolotl.data.build.block
 
 import com.google.gson.Gson
 import com.google.gson.JsonElement
-import dev.kingtux.axolotl.data.build.block.Handlers
+import dev.kingtux.axolotl.data.build.Material
+import dev.kingtux.axolotl.data.build.SoundType
+import dev.kingtux.axolotl.data.build.Tag
+import dev.kingtux.axolotl.data.build.TagHandler
 import net.minecraft.core.Registry
-import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.SignBlock
 import net.minecraft.world.level.block.state.BlockBehaviour
+import net.minecraft.world.level.block.Block as MinecraftBlock
 import net.minecraft.world.level.material.Material as MinecraftMaterial
 
 
@@ -35,7 +38,7 @@ data class BlockProperties(
 
     companion object {
         // Builds the properties from BlockBehaviour.Properties
-        fun buildProperties(block: Block, blockExporter: BlockExporter): BlockProperties {
+        fun buildProperties(block: MinecraftBlock, blockExporter: BlockExporter): BlockProperties {
             val propertiesField = BlockBehaviour::class.java.getDeclaredField("properties");
             propertiesField.isAccessible = true;
             val properties = propertiesField.get(block) as BlockBehaviour.Properties;
@@ -102,7 +105,7 @@ class BlockExporter(
     /**
      * Generate Block Tag
      */
-    private fun buildTag(clazz: Class<*>, instance: Block): Tag {
+    private fun buildTag(clazz: Class<*>, instance: MinecraftBlock): Tag {
         val getValue = tagHandlers[clazz]
         return getValue?.handle(instance) ?: Tag(clazz.simpleName)
     }
@@ -110,8 +113,8 @@ class BlockExporter(
     /**
      * Loops through block interfaces and parent classes to generate a list of "tags"
      */
-    private fun buildTags(instance: Block, blockClass: Class<*>, tags: MutableList<Tag>) {
-        if (blockClass == Block::class.java) return;
+    private fun buildTags(instance: MinecraftBlock, blockClass: Class<*>, tags: MutableList<Tag>) {
+        if (blockClass == MinecraftBlock::class.java) return;
 
         tags.add(buildTag(blockClass, instance))
 

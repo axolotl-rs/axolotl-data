@@ -5,6 +5,7 @@ import dev.kingtux.axolotl.data.build.GenericTag
 import dev.kingtux.axolotl.data.build.Tag
 import dev.kingtux.axolotl.data.build.TagHandler
 import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.tags.TagKey
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.*
@@ -13,7 +14,7 @@ class BlockItemTagHandler() : TagHandler<BlockItem> {
     override fun handle(instance: BlockItem): Tag {
         return GenericTag(
             "BlockItem", mapOf(
-                "block" to Gson().toJsonTree(Registry.BLOCK.getKey(instance.block).path)
+                "block" to Gson().toJsonTree(BuiltInRegistries.BLOCK.getKey(instance.block).path)
             )
         )
     }

@@ -5,6 +5,7 @@ import dev.kingtux.axolotl.data.build.Tag
 import dev.kingtux.axolotl.data.build.TagHandler
 
 import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.entity.ai.attributes.Attribute
 import net.minecraft.world.entity.ai.attributes.AttributeModifier
 import net.minecraft.world.item.*
@@ -15,68 +16,6 @@ import net.minecraft.world.item.Item as MinecraftItem
 enum class CreativeModeTab {
     BUILDING_BLOCKS, DECORATIONS, REDSTONE, TRANSPORTATION, MISC, FOOD, TOOLS, COMBAT, BREWING, MATERIALS, HOTBAR, INVENTORY;
 
-    companion object {
-        fun fromMinecraftType(tab: net.minecraft.world.item.CreativeModeTab): CreativeModeTab {
-            return when (tab) {
-                net.minecraft.world.item.CreativeModeTab.TAB_BREWING -> {
-                    BREWING
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_BUILDING_BLOCKS -> {
-                    BUILDING_BLOCKS
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_COMBAT -> {
-                    COMBAT
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_DECORATIONS -> {
-                    DECORATIONS
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_FOOD -> {
-                    FOOD
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_HOTBAR -> {
-                    HOTBAR
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_INVENTORY -> {
-                    INVENTORY
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_MATERIALS -> {
-                    MATERIALS
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_MISC -> {
-                    MISC
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_REDSTONE -> {
-                    REDSTONE
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_SEARCH -> {
-                    INVENTORY
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_TOOLS -> {
-                    TOOLS
-                }
-
-                net.minecraft.world.item.CreativeModeTab.TAB_TRANSPORTATION -> {
-                    TRANSPORTATION
-                }
-
-                else -> {
-                    // Just in case
-                    INVENTORY
-                }
-            }
-        }
-    }
 }
 
 
@@ -115,7 +54,7 @@ class ItemExport(
                 if (modifiers is ImmutableListMultimap<*, *>) {
                     for (modifier in modifiers.entries()) {
                         if (modifier.key is Attribute && modifier.value is AttributeModifier) {
-                            Registry.ATTRIBUTE.getKey(modifier.key as Attribute)?.let {
+                            BuiltInRegistries.ATTRIBUTE.getKey(modifier.key as Attribute)?.let {
                                 attributes.add(
                                     DefaultAttributeValue(
                                         it.path,
@@ -166,12 +105,11 @@ class ItemExport(
 
     fun run(): List<Item> {
         val items = mutableListOf<Item>()
-        for (item in Registry.ITEM) {
-            val id = Registry.ITEM.getId(item)
-            val name = Registry.ITEM.getKey(item).path
+        for (item in BuiltInRegistries.ITEM) {
+            val id = BuiltInRegistries.ITEM.getId(item)
+            val name = BuiltInRegistries.ITEM.getKey(item).path
             val attributes = getDefaultAttributes(item.javaClass, item)
-            val creativeTab =
-                if (item.itemCategory == null) null else CreativeModeTab.fromMinecraftType(item.itemCategory!!)
+            val creativeTab = null
             val tags = mutableListOf<Tag>()
             this.buildTags(item, item.javaClass, tags)
             val itemData = Item(

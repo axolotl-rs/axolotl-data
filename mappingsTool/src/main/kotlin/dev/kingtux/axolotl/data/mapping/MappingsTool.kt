@@ -187,7 +187,7 @@ class BuildData : CliktCommand() {
         val body = response.body
         if (body == null) {
             println("No Body")
-            return true
+            return false
         }
         val file = output.resolve(version).resolve(name)
         val toFile = file.toFile()
@@ -199,7 +199,7 @@ class BuildData : CliktCommand() {
             return true;
         }
         toFile.writeBytes(body.bytes())
-        return false
+        return true
     }
 }
 

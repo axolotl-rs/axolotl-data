@@ -5,6 +5,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
+import com.mojang.bridge.game.PackType
 import dev.kingtux.axolotl.data.build.block.BlockExporter
 import dev.kingtux.axolotl.data.build.item.ItemExport
 import net.minecraft.SharedConstants
@@ -80,15 +81,17 @@ class DataBuilder : WorldVersion, dev.kingtux.axolotl.data.common.DataBuilder {
     }
 
     override fun getName(): String {
-        return "1.19.2"
+        return "1.19.3"
     }
 
-    override fun getReleaseTarget(): String {
-        return "1.19.2"
-    }
+
 
     override fun getProtocolVersion(): Int {
         return SharedConstants.getProtocolVersion()
+    }
+
+    override fun getPackVersion(p0: PackType?): Int {
+        return 10
     }
 
     override fun getBuildTime(): Date {

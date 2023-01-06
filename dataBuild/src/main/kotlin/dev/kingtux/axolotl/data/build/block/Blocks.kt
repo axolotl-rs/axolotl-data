@@ -6,7 +6,10 @@ import dev.kingtux.axolotl.data.build.Material
 import dev.kingtux.axolotl.data.build.SoundType
 import dev.kingtux.axolotl.data.build.Tag
 import dev.kingtux.axolotl.data.build.TagHandler
+import net.minecraft.core.MappedRegistry
 import net.minecraft.core.Registry
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.block.BedBlock
 import net.minecraft.world.level.block.SignBlock
 import net.minecraft.world.level.block.state.BlockBehaviour
@@ -129,9 +132,10 @@ class BlockExporter(
     fun run(): List<JsonElement> {
         val items = mutableListOf<JsonElement>()
         val gson = Gson()
-        for (item in Registry.BLOCK) {
-            val id = Registry.BLOCK.getId(item)
-            val name = Registry.BLOCK.getKey(item).path
+        val registry = BuiltInRegistries.BLOCK;
+        for (item in registry) {
+            val id = registry.getId(item)
+            val name = registry.getKey(item).path
             val properties = BlockProperties.buildProperties(item, this)
             val tags = mutableListOf<Tag>()
             buildTags(item, item.javaClass, tags)

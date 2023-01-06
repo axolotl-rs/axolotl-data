@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.7.20"
+    kotlin("jvm") version "1.8.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
 
 }
@@ -16,16 +16,16 @@ repositories {
 }
 dependencies {
     implementation(project(":common"))
-    implementation("com.github.ajalt.clikt:clikt:3.5.0")
-    implementation("com.google.code.gson:gson:2.9.1")
+    implementation("com.github.ajalt.clikt:clikt:3.5.1")
+    implementation("com.google.code.gson:gson:2.10")
     implementation("org.reflections:reflections:0.10.2")
 
 
-    testImplementation(files("../data/1.19.2/server-remapped.jar"))
-    testImplementation(fileTree("../data/1.19.2/META-INF/libraries"))
+    testImplementation(files("../data/1.19.3/server-remapped.jar"))
+    testImplementation(fileTree("../data/1.19.3/META-INF/libraries"))
 
-    compileOnly(files("../data/1.19.2/server-remapped.jar"))
-    compileOnly(fileTree("../data/1.19.2/META-INF/libraries"))
+    compileOnly(files("../data/1.19.3/server-remapped.jar"))
+    compileOnly(fileTree("../data/1.19.3/META-INF/libraries"))
 
 }
 tasks {

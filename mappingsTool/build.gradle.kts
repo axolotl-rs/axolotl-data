@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.7.20"
+    kotlin("jvm") version "1.8.0"
     id("com.github.johnrengelman.shadow") version "7.1.0"
 
 }
@@ -17,8 +17,8 @@ repositories {
 dependencies {
     implementation(project(":common"))
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
-    implementation("com.github.ajalt.clikt:clikt:3.5.0")
-    implementation("com.google.code.gson:gson:2.9.1")
+    implementation("com.github.ajalt.clikt:clikt:3.5.1")
+    implementation("com.google.code.gson:gson:2.10")
     implementation("com.github.FabricMC:tiny-remapper:d14e8f9980")
     implementation("com.github.FabricMc:mapping-io:597f0722d6")
 }
